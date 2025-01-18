@@ -1,16 +1,36 @@
 const User = require("../models/userModel");
+const asynchandler = require("express-async-handler");
+const fs = require("fs");
+const path = require("path");
 
-exports.submitForm = async (req, res) => {
-    try {
-        const { name, socialMediaHandle } = req.body;
-        const images = req.files.map((file) => file.filename);
+exports.handleFileUpload = asynchandler(async (req, res) => {
+    const { name, socialMediaHandle } = req.body;
 
-        const newUser = new User({ name, socialMediaHandle, images });
-        await newUser.save();
-
-        res.status(201).json({ message: "User submitted successfully!" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server error" });
+    // Find or create user
+    let user = await User.findOne({ name, socialMediaHandle });
+    if (!user) {
+        user = new User({ name, socialMediaHandle, imagePaths: [] });
+        await user.save();
     }
-};
+
+    // Ensure user's folder exists
+    const userFolder = path.join(__dirname, "../uploads", user._id.toString());
+    if (!fs.existsSync(userFolder)) {
+        fs.mkdirSync(userFolder, { recursive: true });
+    }
+
+    // Move files to user's folder and save paths
+    const imagePaths = req.files.map((file) => {
+        const dest = path.join(userFolder, file.filename);
+        fs.renameSync(file.path, dest);
+        return `uploads/${user._id}/${file.filename}`;
+    });
+
+    user.imagePaths.push(...imagePaths);
+    await user.save();
+
+    res.status(201).json({
+        message: "User and images saved successfully!",
+        user,
+    });
+});
