@@ -4,7 +4,7 @@ const UserSchema = new mongoose.Schema(
     {
         name: { type: String, required: true },
         socialMediaHandle: { type: String, required: true },
-        imagePaths: [String],
+        imagePaths: [{ type: String }],
     },
     { timestamps: true }
 );
