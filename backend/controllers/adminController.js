@@ -10,7 +10,7 @@ exports.getAllUsers = expressAsyncHandler(async (req, res) => {
 exports.getUserById = expressAsyncHandler(async (req, res) => {
     const userId = req.params.id;
     const user = await User.findById(userId).select(
-        "name socialMediaHandle imagePaths"
+        "name socialMediaHandle images"
     );
     if (!user) {
         return res.status(404).json({ message: "User not found" });
