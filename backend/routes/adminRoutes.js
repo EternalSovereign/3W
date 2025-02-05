@@ -1,14 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const adminController = require("../controllers/adminController");
+const {
+    getAllBankAccounts,
+    getAllUsers,
+    getBankAccountByUserID,
+    getUserById,
+} = require("../controllers/adminController");
 const checkAdmin = require("../middleware/checkAdmin");
 const verifyJWT = require("../middleware/verifyJWT");
-const authRoutes = require("../routes/authRoutes");
 
-router.use("/", authRoutes);
-router.route("/users").get(verifyJWT, checkAdmin, adminController.getAllUsers);
+router.route("/users").get(verifyJWT, checkAdmin, getAllUsers);
+router.route("/users/:id").get(verifyJWT, checkAdmin, getUserById);
+router.route("/bank-accounts").get(verifyJWT, checkAdmin, getAllBankAccounts);
 router
-    .route("/users/:id")
-    .get(verifyJWT, checkAdmin, adminController.getUserById);
+    .route("/:id/bank-accounts")
+    .get(verifyJWT, checkAdmin, getBankAccountByUserID);
 
 module.exports = router;

@@ -1,50 +1,89 @@
 const User = require("../models/userModel");
+const BankAccount = require("../models/bankAccountModel");
 const asynchandler = require("express-async-handler");
-const fs = require("fs");
-const path = require("path");
+const bcrypt = require("bcryptjs");
 
-exports.handleFileUpload = asynchandler(async (req, res) => {
-    // const { name, socialMediaHandle } = req.body;
-
-    // // Find or create user
-    // let user = await User.findOne({ name, socialMediaHandle });
-    // if (!user) {
-    //     user = new User({ name, socialMediaHandle, imagePaths: [] });
-    //     await user.save();
-    // }
-
-    // // Ensure user's folder exists
-    // const userFolder = path.join(__dirname, "../uploads", user._id.toString());
-    // if (!fs.existsSync(userFolder)) {
-    //     fs.mkdirSync(userFolder, { recursive: true });
-    // }
-
-    // // Move files to user's folder and save paths
-    // const imagePaths = req.files.map((file) => {
-    //     const dest = path.join(userFolder, file.filename);
-    //     fs.renameSync(file.path, dest);
-    //     return `uploads/${user._id}/${file.filename}`;
-    // });
-
-    // user.imagePaths.push(...imagePaths);
-    // await user.save();
-
-    // res.status(201).json({
-    //     message: "User and images saved successfully!",
-    //     user,
-    // });
-    const { name, socialMediaHandle } = req.body;
-    let user = await User.findOne({ name, socialMediaHandle });
-    if (!user) {
-        user = new User({ name, socialMediaHandle, images: [] });
-        await user.save();
-    }
-    const images = req.files.map((file) => file.buffer.toString("base64"));
-    user.images.push(...images);
-    await user.save();
-
-    res.status(201).json({
-        message: "User and images saved successfully",
-        user: user,
-    });
+const getBankAccounts = asynchandler(async (req, res) => {
+    const userId = req.userId;
+    const bankAccounts = await BankAccount.find({ user: userId });
+    res.status(200).json(bankAccounts);
 });
+
+const createBankAccount = asynchandler(async (req, res) => {
+    const { accountNumber, bankName, accountHolderName, branchName, ifscCode } =
+        req.body;
+    const user = req.userId;
+    //if any is missing return error
+    if (
+        !accountNumber ||
+        !bankName ||
+        !accountHolderName ||
+        !branchName ||
+        !ifscCode
+    ) {
+        return res.status(400).json({ message: "Please fill in all fields" });
+    }
+    //check for dplicate bank account
+    const bankAccountExists = await BankAccount.findOne({
+        accountNumber,
+        bankName,
+        user,
+    });
+    if (bankAccountExists) {
+        return res.status(400).json({ message: "Bank account already exists" });
+    }
+    const newBankAccount = new BankAccount({
+        accountNumber,
+        bankName,
+        accountHolderName,
+        branchName,
+        ifscCode,
+        user,
+    });
+
+    await newBankAccount.save();
+    res.status(201).json({ message: "Bank account created successfully" });
+});
+
+const updateBankAccount = asynchandler(async (req, res) => {
+    const { accountNumber, bankName, accountHolderName, branchName, ifscCode } =
+        req.body;
+    //if any is missing return error
+    if (
+        !accountNumber ||
+        !bankName ||
+        !accountHolderName ||
+        !branchName ||
+        !ifscCode
+    ) {
+        return res.status(400).json({ message: "Please fill in all fields" });
+    }
+    const bankAccountId = req.params.id;
+    const bankAccount = await BankAccount.findById(bankAccountId);
+    if (!bankAccount) {
+        return res.status(404).json({ message: "Bank account not found" });
+    }
+    bankAccount.accountNumber = accountNumber;
+    bankAccount.bankName = bankName;
+    bankAccount.accountHolderName = accountHolderName;
+    bankAccount.branchName = branchName;
+    bankAccount.ifscCode = ifscCode;
+    await bankAccount.save();
+    res.status(200).json({ message: "Bank account updated successfully" });
+});
+
+const deleteBankAccount = asynchandler(async (req, res) => {
+    const bankAccountId = req.params.id;
+    const bankAccount = await BankAccount.findByIdAndDelete(bankAccountId);
+    if (!bankAccount) {
+        return res.status(404).json({ message: "Bank account not found" });
+    }
+    res.status(200).json({ message: "Bank account deleted successfully" });
+});
+
+module.exports = {
+    getBankAccounts,
+    createBankAccount,
+    updateBankAccount,
+    deleteBankAccount,
+};
