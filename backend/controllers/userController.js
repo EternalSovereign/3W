@@ -4,8 +4,8 @@ const asynchandler = require("express-async-handler");
 const bcrypt = require("bcryptjs");
 
 const getBankAccounts = asynchandler(async (req, res) => {
-    const userId = req.userId;
-    const bankAccounts = await BankAccount.find({ user: userId });
+    const username = await User.findById(req.userId).select("username");
+    const bankAccounts = await BankAccount.find({ user: username });
     res.status(200).json(bankAccounts);
 });
 
