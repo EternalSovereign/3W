@@ -12,7 +12,7 @@ const getBankAccounts = asynchandler(async (req, res) => {
 const createBankAccount = asynchandler(async (req, res) => {
     const { accountNumber, bankName, accountHolderName, branchName, ifscCode } =
         req.body;
-    const user = await User.findById(req.userId).select("username");
+    const user = await User.findById(req.userId).select("username").lean();
     //if any is missing return error
     if (
         !accountNumber ||
