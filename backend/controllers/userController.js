@@ -13,6 +13,7 @@ const createBankAccount = asynchandler(async (req, res) => {
     const { accountNumber, bankName, accountHolderName, branchName, ifscCode } =
         req.body;
     const user = await User.findById(req.userId).select("username").lean();
+    const username = user.username;
     //if any is missing return error
     if (
         !accountNumber ||
@@ -25,20 +26,20 @@ const createBankAccount = asynchandler(async (req, res) => {
     }
     //check for dplicate bank account
     const bankAccountExists = await BankAccount.findOne({
-        accountNumber,
-        bankName,
-        user,
+        accountNumber: accountNumber,
+        bankName: bankName,
+        user: username,
     });
     if (bankAccountExists) {
         return res.status(400).json({ message: "Bank account already exists" });
     }
     const newBankAccount = new BankAccount({
-        accountNumber,
-        bankName,
-        accountHolderName,
-        branchName,
-        ifscCode,
-        user,
+        accountNumber: accountNumber,
+        bankName: bankName,
+        accountHolderName: accountHolderName,
+        branchName: branchName,
+        ifscCode: ifscCode,
+        user: username,
     });
 
     await newBankAccount.save();
